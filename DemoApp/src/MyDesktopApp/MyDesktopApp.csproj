@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MyDesktopApp.Core\MyDesktopApp.Core.csproj" />
-     <ProjectReference Include="..\MyDesktopApp.Utilities\MyDesktopApp.Utilities.csproj" />
   </ItemGroup>
 
 </Project>
