@@ -1,0 +1,36 @@
+# azure-pipelines-ci.yml
+# Fast feedback pipeline - runs on every push/PR to main.
+# Build + unit tests only. No UI tests, no installer, no release - those
+# live in azure-pipelines-release.yml since they're slower and don't need
+# to run on every single commit.
+#
+# PR triggers here also serve as our "validation" stage: every PR gets a
+# full restore/build/unit-test pass before it can be merged, without
+# needing a third, separate pipeline file.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  buildConfiguration: 'Release'
+  # Versioning strategy: Major.Minor are set by hand for planned releases;
+  # BuildId gives every CI run a unique, monotonically increasing patch
+  # number so artifacts are always traceable back to the exact run that
+  # produced them. A real production setup would likely use GitVersion or
+  # a similar tool to derive Major.Minor from branch/tag conventions
+  # instead of hardcoding them here.
+  majorMinorVersion: '1.0'
+  version: '$(majorMinorVersion).$(Build.BuildId)'
+
+pool:
+  name: 'SelfHostedWindowsPool'
+
+steps:
+  - template: templates/build-and-test.yml

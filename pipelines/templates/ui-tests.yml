@@ -1,0 +1,40 @@
+# templates/ui-tests.yml
+# Downloads the build + UI test artifacts and runs the UI automation suite.
+# Only used by the Release pipeline. Runs on the 'SelfHostedWindowsPool-Interactive'
+# pool (see azure-pipelines-release.yml) - an agent that runs as an
+# interactive console process under a logged-on Windows session, not as a
+# service. UI automation tools (e.g. FlaUI) need a real desktop session to
+# find and interact with windows; a service agent runs in Session 0, which
+# has no desktop, so UI tests would fail or hang there.
+
+steps:
+
+- download: current
+  artifact: 'buildOutput'
+  displayName: 'Download built app'
+
+- download: current
+  artifact: 'uiTestOutput'
+  displayName: 'Download UI test binaries'
+
+- task: CmdLine@2
+  displayName: 'Copy app next to UI test binaries'
+  inputs:
+    # FlaUI launches MyDesktopApp.exe by relative path from the test output
+    # folder, so both need to sit in the same place before running.
+    script: 'xcopy /Y /E "$(Pipeline.Workspace)\buildOutput\*" "$(Pipeline.Workspace)\uiTestOutput\"'
+
+- task: VSTest@2
+  displayName: 'Run UI automation tests'
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      $(Pipeline.Workspace)\uiTestOutput\MyDesktopApp.UITests.dll
+    runInParallel: false
+
+- task: PublishTestResults@2
+  displayName: 'Publish UI test results'
+  condition: always()
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/*.trx'

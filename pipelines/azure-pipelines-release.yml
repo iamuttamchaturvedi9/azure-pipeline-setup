@@ -1,0 +1,114 @@
+# azure-pipelines-release.yml
+# Full pipeline: Fetch CI output -> UI Tests -> Installer -> Release (with approval).
+# Triggered after the CI pipeline completes successfully on main, rather
+# than on every push directly.
+#
+# IMPORTANT DESIGN DECISION: this pipeline does NOT rebuild the app. It
+# downloads the exact 'buildOutput' and 'uiTestOutput' artifacts that the
+# CI pipeline already built, tested, and published. This guarantees:
+#   1. The binary that ships is byte-for-byte the one CI validated - no
+#      risk of a rebuild introducing drift (different SDK patch version,
+#      different NuGet package restore, etc).
+#   2. A single version number ($(Build.BuildId) from the CI run) flows
+#      through the whole chain - build, test, installer, release - instead
+#      of Release computing its own separate BuildId that wouldn't match
+#      what CI already tested.
+#   3. No duplicated compute: build + unit tests run exactly once per commit.
+
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: ciPipeline
+      # Must match the EXACT name of the CI pipeline as registered in
+      # Azure DevOps (Pipelines list) - the one running azure-pipelines-ci.yml.
+      source: 'azure-pipeline-ci'
+      trigger:
+        branches:
+          include:
+            - main
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+
+- stage: FetchCIBuild
+  displayName: 'Fetch CI Build Output'
+  jobs:
+  - job: FetchCIArtifacts
+    pool:
+      name: 'SelfHostedWindowsPool'
+    steps:
+      - download: ciPipeline
+        artifact: 'buildOutput'
+        displayName: 'Download CI-tested app output'
+
+      - download: ciPipeline
+        artifact: 'uiTestOutput'
+        displayName: 'Download CI-built UI test binaries'
+
+      # Re-publish under this pipeline's run so downstream stages here can
+      # use the normal 'download: current' pattern, same as before.
+      - publish: '$(Pipeline.Workspace)/ciPipeline/buildOutput'
+        artifact: 'buildOutput'
+        displayName: 'Republish app output for this run'
+
+      - publish: '$(Pipeline.Workspace)/ciPipeline/uiTestOutput'
+        artifact: 'uiTestOutput'
+        displayName: 'Republish UI test output for this run'
+
+- stage: UITests
+  displayName: 'UI Automation Tests'
+  dependsOn: FetchCIBuild
+  jobs:
+  - job: RunUITests
+    pool:
+      # Dedicated pool backed by an agent running in an interactive Windows
+      # desktop session (not a service - services run in Session 0, which
+      # has no desktop and can't drive UI automation). See ui-tests.yml.
+      name: 'SelfHostedWindowsPool-Interactive'
+    steps:
+      - template: templates/ui-tests.yml
+
+- stage: Installer
+  displayName: 'Build Installer'
+  dependsOn: UITests
+  jobs:
+  - job: BuildInstaller
+    pool:
+      name: 'SelfHostedWindowsPool'
+    steps:
+      - template: templates/installer.yml
+
+- stage: Release
+  displayName: 'Release'
+  dependsOn: Installer
+  condition: succeeded()
+  jobs:
+  - deployment: PublishRelease
+    displayName: 'Publish release package'
+    environment: 'Production'   # approval check configured on this environment in Azure DevOps
+    pool:
+      name: 'SelfHostedWindowsPool'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: 'release'
+            displayName: 'Download signed installer'
+
+          - task: CmdLine@2
+            displayName: 'Publish release package (placeholder)'
+            inputs:
+              script: 'echo Publishing release package from %PIPELINE_WORKSPACE%\release'
+
+          # Update infrastructure hook (placeholder): a real setup would
+          # publish the versioned MSI + a manifest/appcast file to a feed
+          # consumed by an auto-update mechanism (e.g. Squirrel, custom
+          # updater checking a JSON/XML manifest endpoint).
+          - task: CmdLine@2
+            displayName: 'Publish update manifest (placeholder)'
+            inputs:
+              script: 'echo Publishing update manifest for auto-update clients...'

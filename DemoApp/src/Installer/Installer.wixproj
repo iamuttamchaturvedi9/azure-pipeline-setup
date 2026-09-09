@@ -1,0 +1,11 @@
+<Project Sdk="WixToolset.Sdk/4.0.0">
+
+  <PropertyGroup>
+    <OutputName>MyDesktopApp-Setup</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- Overridden by the pipeline: /p:SourceAppPath=$(Pipeline.Workspace)/buildOutput -->
+    <SourceAppPath Condition="'$(SourceAppPath)'==''">..\MyDesktopApp\bin\Release\net8.0-windows</SourceAppPath>
+    <DefineConstants>SourceAppPath=$(SourceAppPath)</DefineConstants>
+  </PropertyGroup>
+
+</Project>

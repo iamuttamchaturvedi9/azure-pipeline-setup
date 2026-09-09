@@ -1,0 +1,99 @@
+# templates/build-and-test.yml
+# Restore, build, run unit tests, publish app + UI test output as artifacts.
+# Used only by the CI pipeline - the Release pipeline downloads CI's
+# already-tested output instead of rebuilding (see azure-pipelines-release.yml).
+
+steps:
+
+- script: 'echo Version: $(version)'
+  displayName: 'Show version'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore'
+  inputs:
+    command: 'restore'
+    projects: |
+      DemoApp/src/MyDesktopApp/MyDesktopApp.csproj
+      DemoApp/src/MyDesktopApp.Core/MyDesktopApp.Core.csproj
+      DemoApp/src/MyDesktopApp.Utilities/MyDesktopApp.Utilities.csproj
+      DemoApp/src/MyDesktopApp.Tests/MyDesktopApp.Tests.csproj
+      DemoApp/src/MyDesktopApp.UITests/MyDesktopApp.UITests.csproj
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build'
+  inputs:
+    command: 'build'
+    projects: |
+      DemoApp/src/MyDesktopApp/MyDesktopApp.csproj
+      DemoApp/src/MyDesktopApp.Core/MyDesktopApp.Core.csproj
+      DemoApp/src/MyDesktopApp.Utilities/MyDesktopApp.Utilities.csproj
+      DemoApp/src/MyDesktopApp.Tests/MyDesktopApp.Tests.csproj
+      DemoApp/src/MyDesktopApp.UITests/MyDesktopApp.UITests.csproj
+    arguments: '--configuration $(buildConfiguration) /p:Version=$(version)'
+
+# --- Quality check (nice-to-have) ---
+# Placeholder for static analysis / formatting verification. In a real
+# setup this would fail the build on violations rather than just report.
+- task: CmdLine@2
+  displayName: 'Static analysis (placeholder)'
+  inputs:
+    script: |
+      echo Running code style / analyzer checks...
+      REM dotnet format --verify-no-changes DemoApp/MyDesktopApp.sln
+
+# --- Security check (nice-to-have) ---
+# Placeholder for dependency vulnerability scanning. dotnet's built-in
+# NuGet audit can do this for real without extra tooling:
+#   dotnet list package --vulnerable --include-transitive
+- task: CmdLine@2
+  displayName: 'Dependency vulnerability scan (placeholder)'
+  inputs:
+    script: |
+      echo Scanning NuGet dependencies for known vulnerabilities...
+      REM dotnet list DemoApp/src/MyDesktopApp/MyDesktopApp.csproj package --vulnerable --include-transitive
+
+- task: DotNetCoreCLI@2
+  displayName: 'Run unit tests (NUnit)'
+  inputs:
+    command: 'test'
+    # MyDesktopApp.Tests.csproj references the NUnit3TestAdapter + NUnit
+    # NuGet packages; 'dotnet test' auto-discovers NUnit tests through the
+    # adapter, so no separate NUnit-specific task is required.
+    projects: 'DemoApp/src/MyDesktopApp.Tests/MyDesktopApp.Tests.csproj'
+    arguments: '--configuration $(buildConfiguration) /p:Version=$(version) --logger trx'
+
+- task: PublishTestResults@2
+  displayName: 'Publish test results'
+  condition: always()
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/*.trx'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish app output'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'DemoApp/src/MyDesktopApp/MyDesktopApp.csproj'
+    arguments: '--configuration $(buildConfiguration) /p:Version=$(version) --output $(Build.ArtifactStagingDirectory)/app'
+    zipAfterPublish: false
+
+# Also publish the compiled UI test DLLs - the UITests stage runs in a
+# different pipeline/job (Release), so it needs to download these rather
+# than reuse local files from this job.
+- task: DotNetCoreCLI@2
+  displayName: 'Publish UI test output'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'DemoApp/src/MyDesktopApp.UITests/MyDesktopApp.UITests.csproj'
+    arguments: '--configuration $(buildConfiguration) /p:Version=$(version) --output $(Build.ArtifactStagingDirectory)/uitests'
+    zipAfterPublish: false
+
+- publish: '$(Build.ArtifactStagingDirectory)/app'
+  artifact: 'buildOutput'
+  displayName: 'Publish build artifact'
+
+- publish: '$(Build.ArtifactStagingDirectory)/uitests'
+  artifact: 'uiTestOutput'
+  displayName: 'Publish UI test artifact'

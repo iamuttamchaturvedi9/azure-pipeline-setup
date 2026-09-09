@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="MyDesktopApp"
+           Manufacturer="MyCompany"
+           Version="1.0.0.0"
+           UpgradeCode="12345678-1234-1234-1234-123456789abc">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="MainFeature" Title="MyDesktopApp" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="MyDesktopApp" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable" Bitness="always64">
+        <File Id="MyDesktopAppExe"
+              Source="$(var.SourceAppPath)\MyDesktopApp.exe"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+  </Package>
+</Wix>

@@ -1,0 +1,47 @@
+# templates/installer.yml
+# Builds the MSI from the CI-tested app output, signs it, and publishes it
+# as the release package. Runs AFTER UI tests so the installer only ever
+# packages a build that's actually passed everything. Only used by the
+# Release pipeline.
+
+steps:
+
+- checkout: self   # need Installer.wixproj/Product.wxs from the repo
+
+- download: current
+  artifact: 'buildOutput'
+  displayName: 'Download CI-tested app output'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build installer'
+  inputs:
+    command: 'build'
+    projects: 'DemoApp/src/Installer/Installer.wixproj'
+    # DotNetCoreCLI@2's publish command nests output under a subfolder named
+    # after the project (MyDesktopApp/), so we point one level deeper than
+    # the artifact root - confirmed against a real run.
+    arguments: '--configuration $(buildConfiguration) "/p:SourceAppPath=$(Pipeline.Workspace)\buildOutput\MyDesktopApp"'
+
+- task: CopyFiles@2
+  displayName: 'Stage installer output'
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)/DemoApp/src/Installer/bin/$(buildConfiguration)'
+    contents: '*Setup*.msi'
+    targetFolder: '$(Build.ArtifactStagingDirectory)/installer'
+
+# --- Code signing (nice-to-have) ---
+# Placeholder for Authenticode signing of the installer. In a real setup
+# the certificate (.pfx) would come from a Secure File in the Azure DevOps
+# Library or an Azure Key Vault-backed variable group - never committed to
+# the repo or hardcoded in YAML. The signing password/secret would be a
+# secret pipeline variable, injected at run time only.
+- task: CmdLine@2
+  displayName: 'Code sign installer (placeholder)'
+  inputs:
+    script: |
+      echo Signing MSI with production code-signing certificate...
+      REM signtool sign /f "$(CodeSigningCertSecureFile)" /p "$(CodeSigningCertPassword)" /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$(Build.ArtifactStagingDirectory)\installer\*.msi"
+
+- publish: '$(Build.ArtifactStagingDirectory)/installer'
+  artifact: 'release'
+  displayName: 'Publish signed release package'

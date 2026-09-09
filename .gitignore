@@ -1,0 +1,29 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Test and publish output
+TestResults/
+**/TestResults/
+publish/
+**/publish/
+
+# NuGet and package output
+packages/
+*.nupkg
+*.snupkg
+
+# Installer and signing output
+*.msi
+*.wixpdb
+*.pdb
+
+# Local environment and tooling files
+.env
+.env.*
+*.log
