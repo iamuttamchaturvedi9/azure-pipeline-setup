@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyDesktopApp.UITests", "MyD
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Installer", "Installer\Installer.wixproj", "{E5555555-5555-5555-5555-555555555555}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mydesktopapp.Utilities", "MyDesktopApp.Utilities\Mydesktopapp.Utilities.csproJ", "{181DAAD1-094B-4553-F99A-0B6F04879A68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyDesktopApp.Utilities", "MyDesktopApp.Utilities\MyDesktopApp.Utilities.csproj", "{181DAAD1-094B-4553-F99A-0B6F04879A68}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
