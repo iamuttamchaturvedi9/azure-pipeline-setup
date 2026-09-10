@@ -18,10 +18,40 @@
 
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutable" Bitness="always64">
-        <File Id="MyDesktopAppExe"
-              Source="$(var.SourceAppPath)\MyDesktopApp.exe"
-              KeyPath="yes" />
-      </Component>
+    <File Id="MyDesktopAppExe"
+          Source="$(var.SourceAppPath)\MyDesktopApp.exe"
+          KeyPath="yes" />
+  </Component>
+
+  <Component Id="MainApplicationDll" Bitness="always64">
+    <File Id="MyDesktopAppDll"
+          Source="$(var.SourceAppPath)\MyDesktopApp.dll"
+          KeyPath="yes" />
+  </Component>
+
+  <Component Id="CoreDll" Bitness="always64">
+    <File Id="MyDesktopAppCoreDll"
+          Source="$(var.SourceAppPath)\MyDesktopApp.Core.dll"
+          KeyPath="yes" />
+  </Component>
+
+  <Component Id="UtilitiesDll" Bitness="always64">
+    <File Id="MyDesktopAppUtilitiesDll"
+          Source="$(var.SourceAppPath)\MyDesktopApp.Utilities.dll"
+          KeyPath="yes" />
+  </Component>
+
+  <Component Id="DepsJson" Bitness="always64">
+    <File Id="MyDesktopAppDepsJson"
+          Source="$(var.SourceAppPath)\MyDesktopApp.deps.json"
+          KeyPath="yes" />
+  </Component>
+
+  <Component Id="RuntimeConfigJson" Bitness="always64">
+    <File Id="MyDesktopAppRuntimeConfigJson"
+          Source="$(var.SourceAppPath)\MyDesktopApp.runtimeconfig.json"
+          KeyPath="yes" />
+  </Component>
     </ComponentGroup>
 
   </Package>

@@ -78,6 +78,9 @@ steps:
     arguments: '--configuration $(buildConfiguration) /p:Version=$(version) --output $(Build.ArtifactStagingDirectory)/app'
     zipAfterPublish: false
 
+- script: echo $(version)> "$(Build.ArtifactStagingDirectory)\app\version.txt"
+  displayName: 'Save build version'
+
 # Also publish the compiled UI test DLLs - the UITests stage runs in a
 # different pipeline/job (Release), so it needs to download these rather
 # than reuse local files from this job.

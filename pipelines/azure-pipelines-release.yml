@@ -44,6 +44,12 @@ stages:
         artifact: 'buildOutput'
         displayName: 'Download CI-tested app output'
 
+      - script: |
+          set /p version=<"$(Pipeline.Workspace)\ciPipeline\buildOutput\version.txt"
+          echo ##vso[task.setvariable variable=version;isOutput=true]%version%
+        name: SetVersion
+        displayName: 'Read CI version'
+
       - download: ciPipeline
         artifact: 'uiTestOutput'
         displayName: 'Download CI-built UI test binaries'
@@ -97,7 +103,7 @@ stages:
           steps:
           - download: current
             artifact: 'release'
-            displayName: 'Download signed installer'
+            displayName: 'Download installer'
 
           - task: CmdLine@2
             displayName: 'Publish release package (placeholder)'

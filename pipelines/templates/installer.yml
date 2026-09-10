@@ -1,5 +1,6 @@
 # templates/installer.yml
-# Builds the MSI from the CI-tested app output, signs it, and publishes it
+# Builds the MSI from the CI-tested app output and publishes it.
+# Code signing is represented as a production placeholder.
 # as the release package. Runs AFTER UI tests so the installer only ever
 # packages a build that's actually passed everything. Only used by the
 # Release pipeline.
